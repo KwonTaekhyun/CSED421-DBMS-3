@@ -25,19 +25,19 @@
 #ifndef _BFM_H_
 #define _BFM_H_
 
-
 /*@
  * Constant Definitions
  */
 /* Buffer Types */
-#define PAGE_BUF    0
+#define PAGE_BUF 0
 #define LOT_LEAF_BUF 1
 
+#include "EduOM_basictypes.h"
+#include "EduOM_common.h"
 
 Four BfM_FreeTrain(TrainID *, Four);
 Four BfM_GetTrain(TrainID *, char **, Four);
 Four BfM_GetNewTrain(TrainID *, char **, Four);
 Four BfM_SetDirty(TrainID *, Four);
-
 
 #endif /* _BFM_H_ */

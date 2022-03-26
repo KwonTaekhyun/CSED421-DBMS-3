@@ -1,0 +1,5 @@
+make EduOM_Test --dry-run --keep-going --print-directory
+make: Entering directory '/DBMS/DBMS-Project-3'
+make: 'EduOM_Test' is up to date.
+make: Leaving directory '/DBMS/DBMS-Project-3'
+ 

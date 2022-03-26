@@ -1,0 +1,15 @@
+{
+    "makefile.extensionOutputFolder": "./.vscode",
+    "makefile.launchConfigurations": [
+        {
+            "cwd": "/DBMS/DBMS-Project-3",
+            "binaryPath": "/DBMS/DBMS-Project-3/EduOM_Test",
+            "binaryArgs": ["-a"]
+        }
+    ],
+    "editor.defaultFormatter": "ms-vscode.cpptools",
+    "files.associations": {
+        "*.ejs": "html",
+        "type_traits": "c"
+    }
+}
