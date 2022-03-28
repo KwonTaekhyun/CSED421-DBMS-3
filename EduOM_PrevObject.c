@@ -25,17 +25,16 @@
 /*
  * Module: EduOM_PrevObject.c
  *
- * Description: 
+ * Description:
  *  Return the previous object of the given current object.
  *
  * Exports:
  *  Four EduOM_PrevObject(ObjectID*, ObjectID*, ObjectID*, ObjectHdr*)
  */
 
-
-#include "EduOM_common.h"
 #include "BfM.h"
 #include "EduOM_Internal.h"
+#include "EduOM_common.h"
 
 /*@================================
  * EduOM_PrevObject()
@@ -43,7 +42,7 @@
 /*
  * Function: Four EduOM_PrevObject(ObjectID*, ObjectID*, ObjectID*, ObjectHdr*)
  *
- * Description: 
+ * Description:
  * (Following description is for original ODYSSEUS/COSMOS OM.
  *  For ODYSSEUS/EduCOSMOS EduOM, refer to the EduOM project manual.)
  *
@@ -65,30 +64,88 @@
  *     objHdr is filled with the previous object's header
  */
 Four EduOM_PrevObject(
-    ObjectID *catObjForFile,	/* IN informations about a data file */
-    ObjectID *curOID,		/* IN a ObjectID of the current object */
-    ObjectID *prevOID,		/* OUT the previous object of a current object */
-    ObjectHdr*objHdr)		/* OUT the object header of previous object */
+    ObjectID *catObjForFile, /* IN informations about a data file */
+    ObjectID *curOID,        /* IN a ObjectID of the current object */
+    ObjectID *prevOID,       /* OUT the previous object of a current object */
+    ObjectHdr *objHdr)       /* OUT the object header of previous object */
 {
-    Four e;			/* error */
-    Two  i;			/* index */
-    Four offset;		/* starting offset of object within a page */
-    PageID pid;			/* a page identifier */
-    PageNo pageNo;		/* a temporary var for previous page's PageNo */
-    SlottedPage *apage;		/* a pointer to the data page */
-    Object *obj;		/* a pointer to the Object */
-    SlottedPage *catPage;	/* buffer page containing the catalog object */
-    sm_CatOverlayForData *catEntry; /* overlay structure for catalog object access */
+  Four e;               /* error */
+  Two i;                /* index */
+  Four offset;          /* starting offset of object within a page */
+  PageID pid;           /* a page identifier */
+  PageNo pageNo;        /* a temporary var for previous page's PageNo */
+  SlottedPage *apage;   /* a pointer to the data page */
+  Object *obj;          /* a pointer to the Object */
+  SlottedPage *catPage; /* buffer page containing the catalog object */
+  sm_CatOverlayForData
+      *catEntry; /* overlay structure for catalog object access */
+  PhysicalFileID pFid;
 
+  /*@ parameter checking */
+  if (catObjForFile == NULL) ERR(eBADCATALOGOBJECT_OM);
 
+  if (prevOID == NULL) ERR(eBADOBJECTID_OM);
 
-    /*@ parameter checking */
-    if (catObjForFile == NULL) ERR(eBADCATALOGOBJECT_OM);
-    
-    if (prevOID == NULL) ERR(eBADOBJECTID_OM);
+  // 현재 object의 이전 object의 ID를 반환함
 
-    
+  BfM_GetTrain((TrainID *)catObjForFile, (char **)&catPage, PAGE_BUF);
+  GET_PTR_TO_CATENTRY_FOR_DATA(catObjForFile, catPage, catEntry);
+  MAKE_PHYSICALFILEID(pFid, catEntry->fid.volNo, catEntry->lastPage);
 
-    return(EOS);
-    
+  // 1. 파라미터로 주어진 curOID가 NULL 인 경우, File의 마지막 page의 slot array
+  // 상에서의 마지막 object의 ID를 반환함
+  if (curOID == NULL) {
+    pageNo = catEntry->lastPage;
+
+    MAKE_PAGEID(pid, pFid.volNo, pageNo);
+    BfM_GetTrain((TrainID *)&pid, (char **)&apage, PAGE_BUF);
+
+    prevOID->volNo = pid.volNo;
+    prevOID->pageNo = pageNo;
+    prevOID->slotNo = apage->header.nSlots - 1;
+    prevOID->unique = apage->slot[(prevOID->slotNo) * -1].unique;
+
+    BfM_FreeTrain((TrainID *)&pid, PAGE_BUF);
+  } else {
+    // 2. 파라미터로 주어진 curOID가 NULL 이 아닌 경우, curOID에 대응하는
+    // object를 탐색함
+    MAKE_PAGEID(pid, curOID->volNo, curOID->pageNo);
+    BfM_GetTrain((TrainID *)&pid, (char **)&apage, PAGE_BUF);
+
+    // Slot array 상에서, 탐색한 object의 이전 object의 ID를
+    // 반환함, 탐색한 object가 page의 첫 번째 object인 경우, 이전 page의 마지막
+    // object의 ID를 반환함, 탐색한 object가 file의 첫 번째 page의 첫 번째
+    // object인 경우, EOS (End Of Scan) 를 반환함
+    if (curOID->slotNo != 0) {
+      prevOID->volNo = curOID->volNo;
+      prevOID->pageNo = curOID->pageNo;
+      prevOID->slotNo = curOID->slotNo - 1;
+      prevOID->unique = apage->slot[(prevOID->slotNo) * -1].unique;
+
+      BfM_FreeTrain((TrainID *)&pid, PAGE_BUF);
+    } else {
+      if (apage->header.pid.pageNo == catEntry->firstPage) {
+        BfM_FreeTrain((TrainID *)&pid, PAGE_BUF);
+        BfM_FreeTrain((TrainID *)catObjForFile, PAGE_BUF);
+        return (EOS);
+      } else {
+        pageNo = apage->header.prevPage;
+
+        BfM_FreeTrain((TrainID *)&pid, PAGE_BUF);
+        MAKE_PAGEID(pid, curOID->volNo, pageNo);
+        BfM_GetTrain((TrainID *)&pid, (char **)&apage, PAGE_BUF);
+
+        prevOID->volNo = curOID->volNo;
+        prevOID->pageNo = pageNo;
+        prevOID->slotNo = apage->header.nSlots - 1;
+        prevOID->unique = apage->slot[(prevOID->slotNo) * -1].unique;
+
+        BfM_FreeTrain((TrainID *)&pid, PAGE_BUF);
+      }
+    }
+  }
+
+  BfM_FreeTrain((TrainID *)catObjForFile, PAGE_BUF);
+  return (EOS);
+
 } /* EduOM_PrevObject() */

@@ -87,36 +87,32 @@ Four EduOM_CompactPage(SlottedPage *apage, /* IN slotted page to compact */
   // Page의 데이터 영역의 모든 자유 공간이 연속된 하나의 contiguous free
   // area를 형성하도록 object들의 offset를 조정함
   lastSlot = apage->header.nSlots - 1;
-  len = sizeof(Object);
 
   if (slotNo != NIL) {
-    // 1. 파라미터로 주어진 slotNo가 NIL (-1) 이 아닌 경우
+    // 1. 파라미터로 주어진 slotNo가 NIL(-1)이 아닌 경우
     // slotNo에 대응하는 object를 제외한 page의 모든 object들을 데이터 영역의
     // 가장 앞부분부터 연속되게 저장함
     // slotNo에 대응하는 object를 데이터 영역 상에서의 마지막 object로 저장함
-    char tempLastSlot[sizeof(Object)];
+    char temp[100];
+
     apageDataOffset = 0;
     for (i = 0; i <= lastSlot; ++i) {
-      char *apageDataObject =
-          (char *)(&(apage->data[(apage->slot[-i]).offset]));
+      obj = &(apage->data[apage->slot[-i].offset]);
+      len = sizeof(ObjectHdr) + ALIGNED_LENGTH(obj->header.length);
+
+      if (apage->slot[-i].offset == EMPTYSLOT) {
+        continue;
+      }
 
       if (i == slotNo) {
-        for (Two j = 0; j < len; ++j) {
-          tempLastSlot[j] = apageDataObject[j];
-        }
+        memcpy(temp, (char *)obj, len);
       } else {
-        for (Two j = 0; j < len; ++j) {
-          apage->data[apageDataOffset + j] = apageDataObject[j];
-        }
-
+        memcpy(&(apage->data[apageDataOffset]), (char *)obj, len);
         (apage->slot[-i]).offset = apageDataOffset;
         apageDataOffset += len;
       }
     }
-
-    for (Two i = 0; i < len; ++i) {
-      apage->data[apageDataOffset + i] = tempLastSlot[i];
-    }
+    memcpy(&(apage->data[apageDataOffset]), temp, len);
     (apage->slot[slotNo]).offset = apageDataOffset;
     apageDataOffset += len;
 
@@ -125,13 +121,10 @@ Four EduOM_CompactPage(SlottedPage *apage, /* IN slotted page to compact */
     // Page의 모든 object들을 데이터 영역의 가장 앞부분부터 연속되게 저장함
     apageDataOffset = 0;
     for (i = 0; i <= lastSlot; ++i) {
-      char *apageDataObject =
-          (char *)(&(apage->data[(apage->slot[-i]).offset]));
+      obj = &(apage->data[apage->slot[-i].offset]);
+      len = sizeof(ObjectHdr) + ALIGNED_LENGTH(obj->header.length);
 
-      for (Two j = 0; j < len; ++j) {
-        apage->data[apageDataOffset + j] = apageDataObject[j];
-      }
-
+      memcpy(&(apage->data[apageDataOffset]), (char *)obj, len);
       (apage->slot[-i]).offset = apageDataOffset;
       apageDataOffset += len;
     }

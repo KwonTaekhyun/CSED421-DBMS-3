@@ -24,37 +24,35 @@
 /******************************************************************************/
 /*
  * Module : EduOM_ReadObject.c
- * 
- * Description : 
- *  EduOM_ReadObject() causes data to be read from the object identified by 'oid'
- *  into the user specified buffer 'buf'.
+ *
+ * Description :
+ *  EduOM_ReadObject() causes data to be read from the object identified by
+ * 'oid' into the user specified buffer 'buf'.
  *
  * Exports:
  *  Four EduOM_ReadObject(ObjectID*, Four, Four, char*)
  */
 
-
 #include <string.h>
-#include "EduOM_common.h"
-#include "BfM.h"		/* for the buffer manager call */
-#include "LOT.h"		/* for the large object manager call */
+
+#include "BfM.h" /* for the buffer manager call */
 #include "EduOM_Internal.h"
-
-
+#include "EduOM_common.h"
+#include "LOT.h" /* for the large object manager call */
 
 /*@================================
  * EduOM_ReadObject()
  *================================*/
 /*
  * Function: Four EduOM_ReadObject(ObjectID*, Four, Four, char*)
- * 
- * Description : 
+ *
+ * Description :
  * (Following description is for original ODYSSEUS/COSMOS OM.
  *  For ODYSSEUS/EduCOSMOS EduOM, refer to the EduOM project manual.)
  *
  *  (1) What to do?
- *  EduOM_ReadObject() causes data to be read from the object identified by 'oid'
- *  into the user specified buffer 'buf'. The byte range to be read are
+ *  EduOM_ReadObject() causes data to be read from the object identified by
+ *'oid' into the user specified buffer 'buf'. The byte range to be read are
  *  specified by start position 'start' and the number of bytes 'length'.
  *  The 'length' bytes from 'start' are copied from the disk to the user buffer
  *  'buf'. eIf 'length' is REMAINDER, the data from 'start' to end of the
@@ -67,10 +65,10 @@
  *  b. See the object header
  *  c. IF moved object THEN
  *	   call this routine recursively with the forwarded object's identifier
- *     ELSE 
- *	   IF large object THEN 
+ *     ELSE
+ *	   IF large object THEN
  *             call the large object manager's LOT_ReadObject()
- *	   ELSE 
+ *	   ELSE
  *	       copy the data into the user buffer 'buf'
  *	   ENDIF
  *     ENDIF
@@ -86,30 +84,40 @@
  *    eBADSTART_OM
  *    some errors caused by function calls
  */
-Four EduOM_ReadObject(
-    ObjectID 	*oid,		/* IN object to read */
-    Four     	start,		/* IN starting offset of read */
-    Four     	length,		/* IN amount of data to read */
-    char     	*buf)		/* OUT user buffer to return the read data */
+Four EduOM_ReadObject(ObjectID *oid, /* IN object to read */
+                      Four start,    /* IN starting offset of read */
+                      Four length,   /* IN amount of data to read */
+                      char *buf) /* OUT user buffer to return the read data */
 {
-    Four     	e;              /* error code */
-    PageID 	pid;		/* page containing object specified by 'oid' */
-    SlottedPage	*apage;		/* pointer to the buffer of the page  */
-    Object	*obj;		/* pointer to the object in the slotted page */
-    Four	offset;		/* offset of the object in the page */
+  Four e;             /* error code */
+  PageID pid;         /* page containing object specified by 'oid' */
+  SlottedPage *apage; /* pointer to the buffer of the page  */
+  Object *obj;        /* pointer to the object in the slotted page */
+  Four offset;        /* offset of the object in the page */
 
-    
-    
-    /*@ check parameters */
+  /*@ check parameters */
 
-    if (oid == NULL) ERR(eBADOBJECTID_OM);
+  if (oid == NULL) ERR(eBADOBJECTID_OM);
 
-    if (length < 0 && length != REMAINDER) ERR(eBADLENGTH_OM);
-    
-    if (buf == NULL) ERR(eBADUSERBUF_OM);
+  if (length < 0 && length != REMAINDER) ERR(eBADLENGTH_OM);
 
-    
+  if (buf == NULL) ERR(eBADUSERBUF_OM);
 
-    return(length);
-    
+  // Object의 데이터 전체 또는 일부를 읽고, 읽은 데이터에 대한 포인터를
+  // 반환함
+  // 1. 파라미터로 주어진 oid를 이용하여 object에 접근함
+  MAKE_PAGEID(pid, oid->volNo, oid->pageNo);
+  BfM_GetTrain((TrainID *)&pid, (char **)&apage, PAGE_BUF);
+  obj = (Object *)&(apage->data[apage->slot[(oid->slotNo) * -1].offset]);
+
+  // 2. 파라미터로 주어진 start 및 length를 고려하여 접근한 object의 데이터를
+  // 읽음
+  // 3. 해당 데이터에 대한 포인터를 반환함
+  if (length == REMAINDER) length = obj->header.length;
+  memcpy(buf, &(obj->data[start]), length);
+
+  BfM_FreeTrain((TrainID *)&pid, PAGE_BUF);
+
+  return (length);
+
 } /* EduOM_ReadObject() */
