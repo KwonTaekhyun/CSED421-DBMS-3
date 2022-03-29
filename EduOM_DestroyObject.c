@@ -117,7 +117,7 @@ Four EduOM_DestroyObject(
   if (e < 0) ERRB1(e, &pid, PAGE_BUF);
 
   // 2. 삭제할 object에 대응하는 slot을 사용하지 않는 빈 slot으로 설정함
-  obj = (Object *)&(apage->data[offset]);
+  obj = (Object *)&(apage->data[apage->slot[(oid->slotNo) * -1].offset]);
   offset = apage->slot[(oid->slotNo) * -1].offset;
   apage->slot[(oid->slotNo) * -1].offset = EMPTYSLOT;
 
