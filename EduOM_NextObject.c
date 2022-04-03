@@ -91,7 +91,7 @@ Four EduOM_NextObject(
 
   BfM_GetTrain((TrainID *)catObjForFile, (char **)&catPage, PAGE_BUF);
   GET_PTR_TO_CATENTRY_FOR_DATA(catObjForFile, catPage, catEntry);
-  MAKE_PHYSICALFILEID(pFid, catEntry->fid.volNo, catEntry->firstPage);
+  MAKE_PAGEID(pFid, catEntry->fid.volNo, catEntry->firstPage);
 
   // 1. 파라미터로 주어진 curOID가 NULL 인 경우,
   // File의 첫 번째 page의 slot array 상에서의 첫 번째 object의 ID를 반환함

@@ -109,12 +109,10 @@ Four EduOM_DestroyObject(
   // 1. 삭제할 object가 저장된 page를 현재 available space list에서 삭제함
   BfM_GetTrain((TrainID *)catObjForFile, (char **)&catPage, PAGE_BUF);
   GET_PTR_TO_CATENTRY_FOR_DATA(catObjForFile, catPage, catEntry);
-  MAKE_PHYSICALFILEID(pFid, catEntry->fid.volNo, catEntry->firstPage);
   MAKE_PAGEID(pid, oid->volNo, oid->pageNo);
   BfM_GetTrain((TrainID *)&pid, (char **)&apage, PAGE_BUF);
 
-  e = om_RemoveFromAvailSpaceList(catObjForFile, &pid, apage);
-  if (e < 0) ERRB1(e, &pid, PAGE_BUF);
+  om_RemoveFromAvailSpaceList(catObjForFile, &pid, apage);
 
   // 2. 삭제할 object에 대응하는 slot을 사용하지 않는 빈 slot으로 설정함
   obj = (Object *)&(apage->data[apage->slot[(oid->slotNo) * -1].offset]);
@@ -148,11 +146,10 @@ Four EduOM_DestroyObject(
     // Deallocate 할 page 정보가 저장된 element를 dealloc list의 첫 번째
     // element로 삽입함
     om_FileMapDeletePage(catObjForFile, &pid);
-    e = Util_getElementFromPool(dlPool, &dlElem);
-    if (e < 0) ERR(e);
+    Util_getElementFromPool(dlPool, &dlElem);
 
     dlElem->type = DL_PAGE;
-    dlElem->elem.pid = pid; /* ID of the deallocated page */
+    dlElem->elem.pid = pid;
     dlElem->next = dlHead->next;
     dlHead->next = dlElem;
   } else {
@@ -161,6 +158,7 @@ Four EduOM_DestroyObject(
     om_PutInAvailSpaceList(catObjForFile, &pid, apage);
   }
 
+  BfM_SetDirty((TrainID *)&pid, PAGE_BUF);
   BfM_FreeTrain((TrainID *)&pid, PAGE_BUF);
   BfM_FreeTrain((TrainID *)catObjForFile, PAGE_BUF);
 

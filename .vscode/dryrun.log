@@ -1,5 +1,16 @@
-make EduOM_Test --dry-run --keep-going --print-directory
+make EduOM_Test --dry-run --always-make --keep-going --print-directory
 make: Entering directory '/DBMS/DBMS-Project-3'
-make: 'EduOM_Test' is up to date.
+gcc -w -g -fsigned-char -fPIC -I./Header   -c -o EduOM_Test.o EduOM_Test.c
+gcc -w -g -fsigned-char -fPIC -I./Header   -c -o EduOM_TestModule.o EduOM_TestModule.c
+gcc -w -g -fsigned-char -fPIC -I./Header   -c -o EduOM_CompactPage.o EduOM_CompactPage.c
+gcc -w -g -fsigned-char -fPIC -I./Header   -c -o EduOM_CreateObject.o EduOM_CreateObject.c
+gcc -w -g -fsigned-char -fPIC -I./Header   -c -o EduOM_DestroyObject.o EduOM_DestroyObject.c
+gcc -w -g -fsigned-char -fPIC -I./Header   -c -o EduOM_NextObject.o EduOM_NextObject.c
+gcc -w -g -fsigned-char -fPIC -I./Header   -c -o EduOM_PrevObject.o EduOM_PrevObject.c
+gcc -w -g -fsigned-char -fPIC -I./Header   -c -o EduOM_ReadObject.o EduOM_ReadObject.c
+echo ld -r ~~~ -o EduOM.o
+ld -r EduOM_CompactPage.o EduOM_CreateObject.o EduOM_DestroyObject.o EduOM_NextObject.o EduOM_PrevObject.o EduOM_ReadObject.o cosmos.o -o EduOM.o
+chmod -x EduOM.o
+gcc -w -g -fsigned-char -fPIC -I./Header -o EduOM_Test EduOM_Test.o EduOM_TestModule.o EduOM.o -lm
 make: Leaving directory '/DBMS/DBMS-Project-3'
  

@@ -79,7 +79,6 @@ Four EduOM_PrevObject(
   SlottedPage *catPage; /* buffer page containing the catalog object */
   sm_CatOverlayForData
       *catEntry; /* overlay structure for catalog object access */
-  PhysicalFileID pFid;
 
   /*@ parameter checking */
   if (catObjForFile == NULL) ERR(eBADCATALOGOBJECT_OM);
@@ -90,14 +89,13 @@ Four EduOM_PrevObject(
 
   BfM_GetTrain((TrainID *)catObjForFile, (char **)&catPage, PAGE_BUF);
   GET_PTR_TO_CATENTRY_FOR_DATA(catObjForFile, catPage, catEntry);
-  MAKE_PHYSICALFILEID(pFid, catEntry->fid.volNo, catEntry->lastPage);
 
   // 1. 파라미터로 주어진 curOID가 NULL 인 경우, File의 마지막 page의 slot array
   // 상에서의 마지막 object의 ID를 반환함
   if (curOID == NULL) {
     pageNo = catEntry->lastPage;
 
-    MAKE_PAGEID(pid, pFid.volNo, pageNo);
+    MAKE_PAGEID(pid, catEntry->fid.volNo, pageNo);
     BfM_GetTrain((TrainID *)&pid, (char **)&apage, PAGE_BUF);
 
     prevOID->volNo = pid.volNo;
